@@ -1,0 +1,2 @@
+C:\Users\0b901\miniconda3
+C:\Users\0b901\miniconda3\envs\mini-rag-app
