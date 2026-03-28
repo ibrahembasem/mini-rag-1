@@ -1,15 +1,17 @@
-from pydantic import BaseModel, Field, validator
-from bson.objectid import ObjectId
-from typing import Optional
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, Any, Dict
+from bson import ObjectId
 
 class DataChunk(BaseModel):
-    _id: Optional[ObjectId]
-    chunk_txet: str = Field(...,min_length=1)
-    chunk_metadate : dict
-    chunk_order : int = Field(...,gt=0)
-    chunk_project_id : ObjectId
+    # نستخدم Any هنا لأن Pydantic V2 لا يدعم ObjectId تلقائياً
+    id: Optional[Any] = Field(None, alias="_id") 
+    chunk_text: str = Field(..., min_length=1)
+    chunk_metadata: Dict = {}
+    chunk_order: int = Field(..., gt=0)
+    chunk_project_id: Any # أو استخدم ObjectId إذا كنت تفضل ولكن Any أضمن للتشغيل حالياً
 
-
-
-    class config:
-        arbitrary_type_allowed = True
+    # هذا الجزء هو الحل للخطأ الذي ظهر لك
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        populate_by_name=True
+    )
