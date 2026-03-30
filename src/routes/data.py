@@ -25,7 +25,7 @@ async def upload_data( request: Request,project_id: str,file: UploadFile,
                       app_setting: Setting = Depends(get_setting)):
     
 
-    project_model = ProjectModel(
+    project_model = await ProjectModel.create_instance(
         db_client= request.app.db_client
     )
 
@@ -85,7 +85,7 @@ async def process_endpoint(project_id : str, process_request: ProccessRequest,
     overlap_size = process_request.overlap_size
     do_reset= process_request.do_reset
 
-    project_model = ProjectModel(
+    project_model = await ProjectModel.create_instance(
         db_client= request.app.db_client
     )
 
@@ -124,7 +124,7 @@ async def process_endpoint(project_id : str, process_request: ProccessRequest,
         for i, chunk in enumerate(file_chunks)
 
     ]
-    chunk_model= ChunkModel(
+    chunk_model=await ChunkModel.create_instance(
         db_client=request.app.db_client
     )
 
