@@ -8,6 +8,7 @@ class DataChunk(BaseModel):
     chunk_metadata: Dict = {}
     chunk_order: int = Field(..., gt=0)
     chunk_project_id: Any 
+    chunk_asset_id : Any
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
