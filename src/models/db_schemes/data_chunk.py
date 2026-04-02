@@ -16,7 +16,7 @@ class DataChunk(BaseModel):
     )
 
     @classmethod
-    def get_indexess(cls):
+    def get_indexes(cls):
 
           return [
             {
