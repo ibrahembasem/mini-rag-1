@@ -1,3 +1,4 @@
+
 # mini-rag 
 
 This is minimal implemntation of the RAG model for question answering 
@@ -50,5 +51,3 @@ $ cp .env.example .env
 ```bash
 $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
-
-
