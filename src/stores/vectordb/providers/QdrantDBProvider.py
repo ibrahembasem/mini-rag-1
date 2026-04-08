@@ -1,4 +1,4 @@
-from stores.vectordb.providers.QdrantDBProvider import models, QdrantClient
+from qdrant_client import models, QdrantClient
 from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnums import DistnaceMethodEnum
 from typing import List
@@ -33,23 +33,23 @@ class QdrantDBProvider(VectorDBInterface):
         return self.client.get_collection()
     
     def get_collection_info(self, collection_name: str)->dict:
-        return self.client.get_collection(collection_nam=collection_name)
+        return self.client.get_collection(collection_name=collection_name)
     
     def delete_collection(self, collection_name:str):
         if self.is_collection_existed(collection_name):
-            return self.client.delete_collection(collection_nam=collection_name)
+            return self.client.delete_collection(collection_name=collection_name)
 
     def create_collection(self,collection_name: str,
-                          embedding_siez: int,
-                          do_rest: bool = False):
-        if do_rest:
+                          embedding_size: int,
+                          do_reset: bool = False):
+        if do_reset:
             _ = self.delete_collection(collection_name=collection_name)
         
         if not self.is_collection_existed(collection_name):
             _ = self.client.create_collection(
                 collection_name=collection_name,
-                vectors_cofig =models.VectorParams(
-                    size =embedding_siez,
+                vectors_config = models.VectorParams(
+                    size =embedding_size,
                     distance = self.distance_method
 
                 )
@@ -65,11 +65,12 @@ class QdrantDBProvider(VectorDBInterface):
             self.logger.error(f"Can not insert new record to non-existed collection{collection_name}:")
             return False
         try:
-            _ = self.client.upload_record(
+            _ = self.client.upload_records(
                 collection_name = collection_name,
                 records =[
 
                     models.Record(
+                        id= [record_id],
                         vector = vector,
                         payload = {
                             "text": text,
@@ -87,13 +88,13 @@ class QdrantDBProvider(VectorDBInterface):
     
     def insert_many(self,  collection_name:str, texts:str, vectors:list,
                    metadata: dict = None,
-                   record_id :str = None, batch_size: int = 50):
+                   record_ids :str = None, batch_size: int = 50):
         
             if metadata is None:
                 metadata = [None] * len(texts)
 
-            if record_id is None:
-                record_id = [None] * len(texts)
+            if record_ids is None:
+                record_ids = list(range(0,len(texts)))
 
             for i in range(0,len(texts),batch_size):
                 batch_end = i + batch_size
@@ -101,12 +102,11 @@ class QdrantDBProvider(VectorDBInterface):
                 batch_text = texts[i:batch_end]
                 batch_vector = vectors[i:batch_end]
                 batch_metadate = metadata[i:batch_end]
-
+                batch_of_record_ids = record_ids[i:batch_end]
                 batch_record=[
 
-                
-
                         models.Record(
+                            id = batch_of_record_ids[x],
                             vector = batch_vector[x],
                             payload = {
                             "text": batch_text[x],
@@ -121,7 +121,7 @@ class QdrantDBProvider(VectorDBInterface):
                 ]
 
                 try:
-                    _ = self.client.upload_record(
+                    _ = self.client.upload_records(
                         collection_name = collection_name,
                         records =batch_record,
                     )

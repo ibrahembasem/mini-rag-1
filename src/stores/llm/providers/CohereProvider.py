@@ -34,7 +34,11 @@ class CoHereProvider(LLMInterface):
 
 
     def process_text(self, text: str):
-        return text[:self.default_input_max_characters].strip()
+        processed = text[:int(self.default_input_max_characters)].strip()
+        if not processed:
+                return "empty"
+        return processed
+                
 
 
     def generate_text(self, prompt: str,chat_history:list = [] , max_output_tokens: int=None,
@@ -71,18 +75,18 @@ class CoHereProvider(LLMInterface):
              self.logger.error("Embedding model for CoHere was not set")
              return None
         
-        input_type = CohereEnum.DOCUMENT
-        if document_type == DocumentType.QUERY:
-            input_type = CohereEnum.QUERY
+        input_type = CohereEnum.DOCUMENT.value
+        if document_type == DocumentType.QUERY.value:
+            input_type = CohereEnum.QUERY.value
 
         response = self.client.embed(
             model = self.embedding_model_id,
-            texts=[self.process_text[text]],
+            texts=[self.process_text(text)],
             input_type=input_type,
             embedding_types=['float']
         )
         
-        if not response or not response.embeddings or not response.embeddings.float:
+        if response is None or getattr(response, 'embeddings', None) is None or not hasattr(response.embeddings, 'float'):
             self.logger.error("Error while embedding text with CoHere")
             return None
         return response.embeddings.float[0]

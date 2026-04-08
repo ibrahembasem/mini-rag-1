@@ -138,7 +138,7 @@ async def process_endpoint(project_id : str, process_request: ProccessRequest,
         }
     else:
             project_files = await asset_model.get_all_project_assets(
-                assets_project_id=project.id,
+                asset_project_id=project.id,
                 asset_type=AssetTypeEnum.FILE.value
             )
 
