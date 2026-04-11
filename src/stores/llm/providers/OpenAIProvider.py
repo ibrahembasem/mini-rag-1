@@ -24,8 +24,10 @@ class OpenAIProvider(LLMInterface):
 
         self.client = OpenAI(
             api_key= self.api_key,
-            base_url=  self.api_url
+            base_url=  self.api_url if self.api_url and len(self.api_url) else None
         )
+
+        self.enums = OpenAIEnum
 
         self.logger = logging.getLogger(__name__)
 
@@ -40,11 +42,11 @@ class OpenAIProvider(LLMInterface):
 
 
     def process_text(self, text: str):
-        return text[:self.default_input_max_characters].strip()
+        return text.strip()
 
 
     def generate_text(self, prompt: str,chat_history:list = [], max_output_tokens: int = None,
-                      temperature: float = None ):
+                      temperature: float = 0.1 ):
         
         if not self.client:
             self.logger.error("OpenAI client was not set")
@@ -55,7 +57,7 @@ class OpenAIProvider(LLMInterface):
              return None
         
         max_output_tokens = max_output_tokens if max_output_tokens else self.default_generation_max_output_tokens
-        temperature = temperature if temperature else self.default_generation_temprature 
+        temperature = temperature if temperature else self.default_generation_temprature
 
         chat_history.append(
             self.construct_prompt(prompt=prompt, role = OpenAIEnum.USER.value)
@@ -72,7 +74,7 @@ class OpenAIProvider(LLMInterface):
             self.logger.error("Error while generating text with OpenAI")
             return None
         
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
     
 
      

@@ -25,6 +25,8 @@ class CoHereProvider(LLMInterface):
 
         self.logger= logging.getLogger(__name__)
 
+        self.enums = CohereEnum
+
     def set_generation_model(self, model_id: str):
         self.generation_model_id = model_id
 
@@ -34,7 +36,7 @@ class CoHereProvider(LLMInterface):
 
 
     def process_text(self, text: str):
-        processed = text[:int(self.default_input_max_characters)].strip()
+        processed = text.strip()
         if not processed:
                 return "empty"
         return processed
