@@ -136,8 +136,10 @@ class NLPController(BaseController):
 
         ]
 
-        footer_prompt = self.template_parser.get("rag","footer_template")
-        footer_prompt = f"## سؤال المستخدم: {query}\n{footer_prompt}"
+        footer_prompt = self.template_parser.get("rag","footer_template",{
+            "query": query
+        })
+        
         
         
         chat_history = [

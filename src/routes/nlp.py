@@ -148,7 +148,6 @@ async def search_index(request: Request , project_id:str, search_request : Searc
         template_parser = request.app.template_parser
 
     )
-    print(f"========== THE TEXT FROM POSTMAN IS: {search_request.text} ==========")
 
     results = nlp_controller.search_vector_db_collection(
         project= project,
