@@ -19,6 +19,19 @@ services:
     
     restart: always
 
+  pgvector:
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: pgvector
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend
+    restart: always
+
 
 
 networks:
@@ -26,4 +39,5 @@ networks:
 
 volumes:
   mongodata:
+  pgvector_data:
 
