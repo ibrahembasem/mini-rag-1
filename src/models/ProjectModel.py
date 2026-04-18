@@ -8,7 +8,7 @@ class ProjectModel(BaseDataModel):
 
     def __init__(self, db_client:object):
         super().__init__(db_client=db_client)    
-        self.collection = db_client
+        self.db_client = db_client
 
 
     @classmethod
@@ -65,7 +65,7 @@ class ProjectModel(BaseDataModel):
                     total_pages +=1
 
                 query = select(Project).offset((page - 1) * page_size).limit(page_size)
-                projects = await session.execute(query).scaler().all()
+                projects = await session.execute(query).scalars().all()
 
                 return projects,total_pages
     

@@ -9,7 +9,7 @@ from sqlalchemy import func,delete
 class ChunkModel(BaseDataModel):
     def __init__(self, db_client:object):
         super().__init__(db_client = db_client)
-        self.collection = db_client
+        self.db_client = db_client
 
     @classmethod
     async def create_instance(cls,db_client:object):
@@ -31,8 +31,8 @@ class ChunkModel(BaseDataModel):
           
            async with self.db_client() as session:
             async with session.begin():
-                query = select(DataChunk).where(DataChunk.chunk_id == chunk_id)
-                chunk =query.scalar_one_or_none() 
+                result = await session.execute(select(DataChunk).where(DataChunk.chunk_id == chunk_id))
+                chunk =result.scalar_one_or_none() 
 
             return chunk
     
@@ -42,7 +42,7 @@ class ChunkModel(BaseDataModel):
         async with self.db_client() as session:
             async with session.begin():
 
-                for i in range (0,len(chunks), batch_size):
+                for i in range (0, len(chunks), batch_size):
                     batch = chunks[i:i+batch_size]
                     session.add_all(batch)
             await session.commit()
@@ -64,3 +64,13 @@ class ChunkModel(BaseDataModel):
                 result = await session.execute(stmt)
                 records = result.scalars().all()
             return records
+        
+
+    async def get_total_chunks_count(self, project_id: ObjectId):
+        total_count = 0
+        async with self.db_client() as session:
+            count_sql = select(func.count(DataChunk.chunk_id)).where(DataChunk.chunk_project_id == project_id)
+            records_count = await session.execute(count_sql)
+            total_count = records_count.scalar()
+        
+        return total_count
