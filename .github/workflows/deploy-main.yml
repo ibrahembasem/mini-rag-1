@@ -1,4 +1,4 @@
-name: Deploy Develop Branch to Server
+name: Deploy Main Branch to Server
 
 on:
   push:
