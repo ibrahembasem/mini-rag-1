@@ -4,7 +4,7 @@ import cohere
 import logging
 from typing import List, Union
 
-class CoHereProvider(LLMInterface):
+class (LLMInterface):
 
     def __init__(self, api_key: str,
                  default_input_max_characters: int=1000,
