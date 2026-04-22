@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SSH_MAIN_PRIVATE_KEY }}
           script: |
             cd /home/github_user/workspace/mini-rag
-            git checkout MAIN
+            git checkout main
             git pull
             sudo systemctl restart minirag.service
             echo "Waiting..."
