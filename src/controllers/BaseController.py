@@ -16,7 +16,7 @@ class BaseController:
 
         self.database_dir= os.path.join(
             self.base_dir,
-            "assets/file"
+            "assets/database"
         )
 
     def generate_random_string(self, length: int=12):
