@@ -231,13 +231,3 @@ async def search_index(request: Request , project_id: int, search_request : Sear
             "chat_history": chat_history
         }
     )
-
-
-
-
-
-
-
-
-
-
