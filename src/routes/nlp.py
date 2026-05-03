@@ -191,7 +191,7 @@ async def search_index(request: Request , project_id: int, search_request : Sear
 
 
 @nlp_router.post("/index/answer/{project_id}")
-async def search_index(request: Request , project_id: int, search_request : SearchRequest):
+async def answer_rag(request: Request , project_id: int, search_request : SearchRequest):
     
     project_model = await ProjectModel.create_instance(
         db_client = request.app.db_client
@@ -212,7 +212,8 @@ async def search_index(request: Request , project_id: int, search_request : Sear
     answer , full_prompt , chat_history =await nlp_controller.answer_rag_question(
         project= project,
         query= search_request.text,
-        limit= search_request.limit
+        limit= search_request.limit,
+        chat_history=[msg.dict() for msg in search_request.chat_history] if search_request.chat_history else []
     )
 
     if not answer :

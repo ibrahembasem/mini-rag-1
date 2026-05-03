@@ -48,9 +48,8 @@ def detect_language(text: str) -> dict:
         lang_code = detect(text)
         if lang_code in LANG_MAP:
             return {"code": lang_code, **LANG_MAP[lang_code]}
-        # لغة غير معروفة — نرد بالإنجليزي كافتراضي
-        return {"code": lang_code, "name": lang_code, "flag": "🌐",
-                "instruction": "Reply in the same language as the question."}
+        # إذا اكتشف لغة غريبة (مثل fa للفارسي بالخطأ بسبب العامية)، نعتبرها عربية كافتراضي
+        return {"code": "ar", **LANG_MAP["ar"]}
     except Exception:
         return {"code": "en", **LANG_MAP["en"]}
 
@@ -86,9 +85,18 @@ if prompt := st.chat_input("بماذا يمكنني مساعدتك اليوم؟"
                 # إضافة تعليمات اللغة للنص
                 enhanced_text = f"{lang['instruction']}\n{prompt}"
 
+                # تجهيز chat_history (نرسل آخر 6 رسائل فقط لتجنب تجاوز الحد الأقصى للتوكنز)
+                # نستثني الرسالة الحالية لأنها سترسل في text
+                recent_messages = st.session_state.messages[:-1][-6:]
+                formatted_history = [{"role": m["role"], "content": m["content"]} for m in recent_messages]
+
                 response = requests.post(
                     api_url,
-                    json={"text": enhanced_text, "limit": 5},
+                    json={
+                        "text": enhanced_text, 
+                        "limit": 5,
+                        "chat_history": formatted_history
+                    },
                     timeout=60
                 )
 

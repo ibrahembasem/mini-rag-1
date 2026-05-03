@@ -34,3 +34,19 @@ footer_template = Template("\n".join([
     "",
     "## Answer:",
 ]))
+
+### Condense Question ###
+condense_question_prompt = Template("\n".join([
+    "Given the following conversation history and the user's latest question,",
+    "rephrase the question to be a standalone question that can be understood without the conversation history.",
+    "Do NOT answer the question, just reformulate it if needed.",
+    "If the question is already clear and standalone, return it as is.",
+    "",
+    "## Conversation History:",
+    "$chat_history",
+    "",
+    "## Latest Question:",
+    "$query",
+    "",
+    "## Standalone Question:"
+]))
