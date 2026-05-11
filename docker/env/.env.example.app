@@ -48,4 +48,8 @@ VECTOR_DB_METHOD = "cosine"
 PRIMARY_LANG = "en"
 DEFAULT_LANG = "en"
 
- 
+ #================================= WhatsApp Cloud API ===========================
+WHATSAPP_VERIFY_TOKEN=""
+WHATSAPP_API_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=""
+WHATSAPP_DEFAULT_PROJECT_ID=""
