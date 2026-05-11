@@ -45,6 +45,12 @@ class Setting(BaseSettings):
     DEFAULT_LANG : str = "en"
     PRIMARY_LANG : str = "en"
 
+    # WhatsApp Cloud API Settings
+    WHATSAPP_VERIFY_TOKEN: str = None
+    WHATSAPP_API_TOKEN: str = None
+    WHATSAPP_PHONE_NUMBER_ID: str = None
+    WHATSAPP_DEFAULT_PROJECT_ID: str = None
+
     model_config = SettingsConfigDict(env_file=".env")
 
 

@@ -15,6 +15,7 @@ class Project(SQLAlchemyBase):
 
     chunks = relationship("DataChunk", back_populates="projects")
     assets = relationship("Asset", back_populates="projects")
+    chat_messages = relationship("ChatMessage", back_populates="project")
 
 
 

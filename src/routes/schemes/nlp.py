@@ -14,3 +14,5 @@ class SearchRequest(BaseModel):
     text : str
     limit: Optional[int] = 5
     chat_history: Optional[List[Message]] = []
+    language_instruction: Optional[str] = None
+    session_id: Optional[str] = None

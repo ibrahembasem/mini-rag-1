@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import uuid
 from langdetect import detect
 
 # 1. إعدادات الصفحة
@@ -25,6 +26,8 @@ st.sidebar.divider()
 
 # مسح المحادثة
 if st.sidebar.button("🗑️ مسح المحادثة", use_container_width=True):
+    # توليد session_id جديد عند مسح المحادثة
+    st.session_state.session_id = str(uuid.uuid4())
     st.session_state.messages = []
     st.rerun()
 
@@ -32,6 +35,14 @@ if st.sidebar.button("🗑️ مسح المحادثة", use_container_width=True
 if "messages" in st.session_state and len(st.session_state.messages) > 0:
     msg_count = len(st.session_state.messages)
     st.sidebar.caption(f"💬 عدد الرسائل: {msg_count}")
+
+# ==============  Session ID ==============
+# توليد session_id فريد لكل جلسة Streamlit (مرة واحدة فقط)
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+# عرض الـ session_id في الـ Sidebar (مفيد للتطوير)
+st.sidebar.caption(f"🔑 Session: `{st.session_state.session_id[:8]}...`")
 
 # ==============  Language Detection ==============
 LANG_MAP = {
@@ -82,20 +93,14 @@ if prompt := st.chat_input("بماذا يمكنني مساعدتك اليوم؟"
             try:
                 api_url = f"{FASTAPI_HOST}/api/v1/nlp/index/answer/{project_id}"
 
-                # إضافة تعليمات اللغة للنص
-                enhanced_text = f"{lang['instruction']}\n{prompt}"
-
-                # تجهيز chat_history (نرسل آخر 6 رسائل فقط لتجنب تجاوز الحد الأقصى للتوكنز)
-                # نستثني الرسالة الحالية لأنها سترسل في text
-                recent_messages = st.session_state.messages[:-1][-6:]
-                formatted_history = [{"role": m["role"], "content": m["content"]} for m in recent_messages]
-
+                # نرسل session_id والباك إند يتكفل بجلب الذاكرة من قاعدة البيانات
                 response = requests.post(
                     api_url,
                     json={
-                        "text": enhanced_text, 
+                        "text": prompt, 
                         "limit": 5,
-                        "chat_history": formatted_history
+                        "session_id": st.session_state.session_id,
+                        "language_instruction": lang['instruction']
                     },
                     timeout=60
                 )
@@ -112,7 +117,7 @@ if prompt := st.chat_input("بماذا يمكنني مساعدتك اليوم؟"
                         with st.expander("📄 المصادر المستخدمة"):
                             st.code(full_prompt, language=None)
 
-                    # حفظ في سجل المحادثة
+                    # حفظ في سجل المحادثة المحلي (للعرض فقط)
                     st.session_state.messages.append({
                         "role": "assistant",
                         "content": answer,

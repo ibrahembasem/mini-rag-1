@@ -107,7 +107,7 @@ class NLPController(BaseController):
         return results
     
 
-    async def answer_rag_question(self, project:Project, query: str, limit: int = 10, chat_history: list = None):
+    async def answer_rag_question(self, project:Project, query: str, limit: int = 10, chat_history: list = None, language_instruction: str = None):
 
         if chat_history is None:
             chat_history = []
@@ -162,7 +162,7 @@ class NLPController(BaseController):
         ])
 
         footer_prompt = self.template_parser.get("rag","footer_template",{
-            "query": query
+            "query": f"{language_instruction}\n{query}" if language_instruction else query
         })
         
         
