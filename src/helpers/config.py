@@ -44,6 +44,7 @@ class Setting(BaseSettings):
 
     DEFAULT_LANG : str = "en"
     PRIMARY_LANG : str = "en"
+    ARABIC_DIALECT : str = None  # e.g. "كويتية", "أردنية", "مصرية"
 
     # WhatsApp Cloud API Settings
     WHATSAPP_VERIFY_TOKEN: str = None

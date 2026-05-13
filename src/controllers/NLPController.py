@@ -150,7 +150,11 @@ class NLPController(BaseController):
         
         #step2: construct LLM prompt
 
-        system_prompt = self.template_parser.get("rag","system_prompt")
+        dialect = self.app_settings.ARABIC_DIALECT or ""
+        dialect_instruction = f"عند الرد بالعربية، يجب أن تكون إجابتك باللهجة {dialect}." if dialect else ""
+        system_prompt = self.template_parser.get("rag", "system_prompt", {
+            "dialect_instruction": dialect_instruction
+        })
 
         
         documents_prompts = "\n".join([
