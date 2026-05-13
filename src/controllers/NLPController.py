@@ -107,22 +107,47 @@ class NLPController(BaseController):
         return results
     
 
-    async def answer_rag_question(self, project:Project, query: str, limit: int = 10):
+    async def answer_rag_question(self, project:Project, query: str, limit: int = 10, chat_history: list = None, language_instruction: str = None):
 
-        answer , full_prompt , chat_history = None, None, None
+        if chat_history is None:
+            chat_history = []
 
+        answer , full_prompt , ret_chat_history = None, None, None
+
+        # --- تحسين البحث عبر إعادة صياغة السؤال (Query Rewriting) ---
+        search_query = query
+        if len(chat_history) > 0:
+            # 1. تحويل سجل المحادثة إلى نص مقروء
+            chat_history_str = "\n".join([f"{'المستخدم' if msg['role'] == 'user' else 'المساعد'}: {msg['content']}" for msg in chat_history])
+            
+            # 2. إحضار القالب الخاص بإعادة صياغة السؤال
+            condense_prompt = self.template_parser.get("rag", "condense_question_prompt", {
+                "chat_history": chat_history_str,
+                "query": query
+            })
+            
+            # 3. نطلب من الموديل إعادة صياغة السؤال ليصبح مستقلاً
+            rewritten_query = self.generation_client.generate_text(
+                prompt=condense_prompt,
+                chat_history=[], # نرسل القالب كسؤال جديد بدون تاريخ إضافي
+                max_output_tokens=100 # لا نحتاج لإجابة طويلة، فقط السؤال
+            )
+            
+            if rewritten_query:
+                search_query = rewritten_query.strip()
+                print(f"\n[DEBUG] Original Query: {query}", flush=True)
+                print(f"[DEBUG] Rewritten Query: {search_query}\n", flush=True)
 
          #step1: retrieve related document 
         retrieved_documents = await self.search_vector_db_collection(
             project=project,
-            text= query,
+            text= search_query,
             limit=limit,
             )
         
         if not retrieved_documents or len(retrieved_documents)==0:
             return answer , full_prompt , chat_history 
         
-
         #step2: construct LLM prompt
 
         system_prompt = self.template_parser.get("rag","system_prompt")
@@ -137,12 +162,12 @@ class NLPController(BaseController):
         ])
 
         footer_prompt = self.template_parser.get("rag","footer_template",{
-            "query": query
+            "query": f"{language_instruction}\n{query}" if language_instruction else query
         })
         
         
         
-        chat_history = [
+        base_chat_history = [
 
             self.generation_client.construct_prompt(
                 prompt = system_prompt,
@@ -150,15 +175,26 @@ class NLPController(BaseController):
             )
         ]
 
+        for msg in chat_history:
+            # We skip adding full_prompt and sources from previous messages,
+            # and just pass the text content of previous user queries and assistant answers
+            # This logic assumes Streamlit already passes {"role": "...", "content": "..."}
+            base_chat_history.append(
+                self.generation_client.construct_prompt(
+                    prompt=msg['content'],
+                    role=msg['role']
+                )
+            )
+
         full_prompt = "\n\n".join([ documents_prompts,  footer_prompt])
 
         # step4: Retrieve the Answer
         answer = self.generation_client.generate_text(
             prompt =full_prompt,
-            chat_history = chat_history
+            chat_history = base_chat_history
         )
 
-        return answer , full_prompt , chat_history
+        return answer , full_prompt , base_chat_history
 
     
 

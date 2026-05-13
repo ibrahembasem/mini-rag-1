@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from routes.schemes.nlp import PushRequest,SearchRequest
 from models.ProjectModel import ProjectModel
 from models.ChunkModel import ChunkModel
+from models.ChatModel import ChatModel
 from models import ResponseSignal
 from controllers import NLPController
 from tqdm.auto import tqdm
@@ -191,7 +192,7 @@ async def search_index(request: Request , project_id: int, search_request : Sear
 
 
 @nlp_router.post("/index/answer/{project_id}")
-async def search_index(request: Request , project_id: int, search_request : SearchRequest):
+async def answer_rag(request: Request , project_id: int, search_request : SearchRequest):
     
     project_model = await ProjectModel.create_instance(
         db_client = request.app.db_client
@@ -209,10 +210,31 @@ async def search_index(request: Request , project_id: int, search_request : Sear
 
     )
 
-    answer , full_prompt , chat_history =await nlp_controller.answer_rag_question(
+    # --- تحديد مصدر الذاكرة ---
+    chat_history = []
+    session_id = search_request.session_id
+
+    if session_id:
+        # الذاكرة من قاعدة البيانات (الوضع الجديد: واتساب + Streamlit)
+        chat_model = await ChatModel.create_instance(
+            db_client=request.app.db_client
+        )
+        db_messages = await chat_model.get_recent_messages(
+            session_id=session_id,
+            project_id=project_id,
+            limit=6
+        )
+        chat_history = [{"role": msg.role, "content": msg.content} for msg in db_messages]
+    else:
+        # الذاكرة من الطلب (الوضع القديم: Streamlit بدون session_id - backward compatible)
+        chat_history = [msg.dict() for msg in search_request.chat_history] if search_request.chat_history else []
+
+    answer , full_prompt , ret_chat_history =await nlp_controller.answer_rag_question(
         project= project,
         query= search_request.text,
-        limit= search_request.limit
+        limit= search_request.limit,
+        chat_history=chat_history,
+        language_instruction=search_request.language_instruction
     )
 
     if not answer :
@@ -222,22 +244,30 @@ async def search_index(request: Request , project_id: int, search_request : Sear
                 "signal" : ResponseSignal.RAG_ANSWER_ERROR.value
             }
         )
+
+    # --- حفظ الرسائل في قاعدة البيانات ---
+    if session_id:
+        # حفظ سؤال المستخدم
+        await chat_model.add_message(
+            session_id=session_id,
+            project_id=project_id,
+            role="user",
+            content=search_request.text
+        )
+        # حفظ إجابة المساعد
+        await chat_model.add_message(
+            session_id=session_id,
+            project_id=project_id,
+            role="assistant",
+            content=answer
+        )
     
     return JSONResponse(
         content={
             "signal":ResponseSignal.RAG_ANSWER_SUCCESS.value,
             "answer": answer,
             "full_prompt": full_prompt,
-            "chat_history": chat_history
+            "chat_history": ret_chat_history,
+            "session_id": session_id
         }
     )
-
-
-
-
-
-
-
-
-
-

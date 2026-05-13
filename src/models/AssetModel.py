@@ -2,6 +2,7 @@ from .BaseDataModel import BaseDataModel
 from .db_schemes import Asset
 from .enums.DataBaseEnum import DataBaseEnum
 from sqlalchemy.future import select
+from sqlalchemy import delete
 
 class AssetModel(BaseDataModel):
 
@@ -45,5 +46,28 @@ class AssetModel(BaseDataModel):
             record = result.scalar_one_or_none()
         return record
 
+    async def get_asset_by_id(self, asset_id: int):
+        """جلب asset واحد بالـ ID"""
+        async with self.db_client() as session:
+            stmt = select(Asset).where(Asset.asset_id == asset_id)
+            result = await session.execute(stmt)
+            record = result.scalar_one_or_none()
+        return record
 
-    
+    async def delete_asset_by_id(self, asset_id: int):
+        """حذف asset واحد بالـ ID"""
+        async with self.db_client() as session:
+            async with session.begin():
+                stmt = delete(Asset).where(Asset.asset_id == asset_id)
+                result = await session.execute(stmt)
+            await session.commit()
+        return result.rowcount
+
+    async def delete_all_project_assets(self, asset_project_id: int):
+        """حذف كل الـ assets الخاصة بمشروع معين"""
+        async with self.db_client() as session:
+            async with session.begin():
+                stmt = delete(Asset).where(Asset.asset_project_id == asset_project_id)
+                result = await session.execute(stmt)
+            await session.commit()
+        return result.rowcount

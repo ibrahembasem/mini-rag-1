@@ -240,9 +240,118 @@ async def process_endpoint(project_id: int, process_request: ProccessRequest,
     )
      
 
+@data_router.delete("/delete/{project_id}")
+async def delete_data(request: Request, project_id: int, asset_id: int = None):
+    """
+    حذف البيانات من المشروع:
+    - إذا تم تمرير asset_id: يحذف ملف واحد فقط مع تقطيعاته
+    - إذا لم يتم تمرير asset_id: يحذف كل ملفات المشروع مع تقطيعاتها
+    """
 
+    project_model = await ProjectModel.create_instance(
+        db_client=request.app.db_client
+    )
 
+    project = await project_model.get_project_or_create_one(
+        project_id=project_id
+    )
 
+    if project is None:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"signal": "PROJECT_NOT_FOUND"}
+        )
+
+    asset_model = await AssetModel.create_instance(
+        db_client=request.app.db_client
+    )
+
+    chunk_model = await ChunkModel.create_instance(
+        db_client=request.app.db_client
+    )
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser
+    )
+
+    project_controller = ProjectController()
+    deleted_chunks = 0
+    deleted_assets = 0
+    deleted_files = []
+
+    if asset_id:
+        # === حذف ملف واحد ===
+        asset_record = await asset_model.get_asset_by_id(asset_id=asset_id)
+
+        if asset_record is None or asset_record.asset_project_id != project.project_id:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"signal": "ASSET_NOT_FOUND"}
+            )
+
+        # 1. حذف التقطيعات من قاعدة البيانات
+        deleted_chunks = await chunk_model.delete_chunks_by_asset_id(asset_id=asset_id)
+
+        # 2. حذف سجل الملف من جدول assets
+        await asset_model.delete_asset_by_id(asset_id=asset_id)
+        deleted_assets = 1
+
+        # 3. حذف الملف الفعلي من الهارد ديسك
+        file_path = os.path.join(
+            project_controller.get_project_path(project_id=project_id),
+            asset_record.asset_name
+        )
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            deleted_files.append(asset_record.asset_name)
+
+        logger.info(f"Deleted asset {asset_id}: {asset_record.asset_name}, chunks: {deleted_chunks}")
+
+    else:
+        # === حذف كل ملفات المشروع ===
+
+        # 1. جلب كل الملفات لحذفها من الهارد ديسك
+        project_assets = await asset_model.get_all_project_assets(
+            asset_project_id=project.project_id,
+            asset_type=AssetTypeEnum.FILE.value
+        )
+
+        for asset in project_assets:
+            file_path = os.path.join(
+                project_controller.get_project_path(project_id=project_id),
+                asset.asset_name
+            )
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                deleted_files.append(asset.asset_name)
+
+        # 2. حذف الـ VectorDB collection (يجب حذفه أولاً لتجنب خطأ الـ Foreign Key)
+        collection_name = nlp_controller.create_collection_name(project_id=project.project_id)
+        _ = await request.app.vectordb_client.delete_collection(collection_name=collection_name)
+
+        # 3. حذف كل التقطيعات من قاعدة البيانات
+        deleted_chunks = await chunk_model.delete_chunks_by_project_id(
+            project_id=project.project_id
+        )
+
+        # 4. حذف كل سجلات الملفات من جدول assets
+        deleted_assets = await asset_model.delete_all_project_assets(
+            asset_project_id=project.project_id
+        )
+
+        logger.info(f"Deleted ALL data for project {project_id}: assets={deleted_assets}, chunks={deleted_chunks}")
+
+    return JSONResponse(
+        content={
+            "signal": "DELETE_SUCCESS",
+            "deleted_assets": deleted_assets,
+            "deleted_chunks": deleted_chunks,
+            "deleted_files": deleted_files
+        }
+    )
 
 
 

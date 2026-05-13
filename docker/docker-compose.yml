@@ -24,8 +24,10 @@ services:
     container_name: nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - fastapi
     networks:
@@ -116,7 +118,9 @@ services:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|mnt/wsl)($$|/)'
+      - '--no-collector.softnet'
+      - '--no-collector.netstat'
     networks:
       - backend
     restart: always
