@@ -199,20 +199,3 @@ class NLPController(BaseController):
         )
 
         return answer , full_prompt , base_chat_history
-
-    
-
-
-
-    
-        
-
-        
-
-
-    
-
-
-
-    
-

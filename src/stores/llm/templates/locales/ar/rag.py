@@ -16,7 +16,6 @@ system_prompt = Template("\n".join([
     "كن دقيقاً وموجزاً في إجابتك. وتجنب ذكر أي معلومات غير ضرورية."
 ]))
 
-
 ### Document ###
 document_prompt = Template(
     "\n".join([
